@@ -9,6 +9,7 @@
 *.synctex.gz
 *.fls
 *.fdb_latexmk
+*.pdf
 
 # Editor
 .vscode/
