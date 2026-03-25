@@ -83,7 +83,7 @@
 
 ### 实验验证：SWE-Bench 上的对比
 
-有论文在 SWE-Bench（Software Engineering Benchmark，让语言模型去修复 GitHub Repo 中的 Issue）上做了对比实验：
+有一篇探讨 [Observation Masking](https://arxiv.org/abs/2508.21433) 的论文在 SWE-Bench（Software Engineering Benchmark，让语言模型去修复 GitHub Repo 中的 Issue）上做了对比实验：
 
 - **黑色点（Raw Agent）**：没有做任何压缩，所有环境信息通通堆进历史记录。虽然在多数情况下表现不错，但相较于其他方法，会耗费更多的 Token。
 - **红色方块（LLM Summary）**：用语言模型对上下文进行压缩。与黑色点比起来差别不大，说明压缩是有效的。
@@ -166,7 +166,7 @@ Context 不一定会成为语言模型的输入，只有 Context 的一部分会
 
 ### ACON 的解法
 
-ACON 这篇论文的解法是：
+[ACON](https://arxiv.org/abs/2510.00615) 这篇论文的解法是：
 
 1. 拿另外一个语言模型出来
 2. 收集一些训练数据：本来没做压缩时可以做对，但压缩后就做不对的例子
@@ -206,7 +206,7 @@ ACON 这篇论文的解法是：
 
 ![AgentFold：压缩时机与 Fold 工具](key_slides/p1_slide_0030.jpg)
 
-有一篇论文叫做 **AgentFold**，它训练模型使用一个叫做 **Fold（折叠）** 的压缩工具。这个工具接收两个输入：
+有一篇论文叫做 [**AgentFold**](https://arxiv.org/abs/2510.24699)，它训练模型使用一个叫做 **Fold（折叠）** 的压缩工具。这个工具接收两个输入：
 
 1. 要把对话的第几步到第几步做压缩
 2. 压缩后留下的小纸条内容
@@ -276,7 +276,7 @@ Subagent 可以看作是一种**自主的压缩行为**。当主 Agent 在某个
 
 一般让 AI Agent 使用工具时，会把所有工具的说明放在 System Prompt 里面。但有些工具的描述非常长（比如 GitHub 工具就有 4600 个 Token），如果工具很多，直接就超过 Context Window 的上限了。
 
-**MCP-Zero** 这篇论文的核心想法：让语言模型用 AI 动态决定自己需要什么工具。
+[**MCP-Zero**](https://arxiv.org/abs/2506.01056) 这篇论文的核心想法：让语言模型用 AI 动态决定自己需要什么工具。
 
 - 语言模型读到任务后，自己输出一个"工具需求"
 - 用这个需求去操控搜索引擎，从工具数据库中找出需要的工具
@@ -307,7 +307,7 @@ Subagent 可以看作是一种**自主的压缩行为**。当主 Agent 在某个
 
 ### Agentic Context Engineering 论文
 
-更复杂的做法是让 Context 经过三个语言模型：**Generator → Reflector → Curator**。
+[这篇关于 Agentic Context Engineering 的论文](https://arxiv.org/abs/2510.04618)中，更复杂的做法是让 Context 经过三个语言模型：**Generator → Reflector → Curator**。
 
 这三个模块分别做不同的检查，最后产生一个**修改 Playbook（员工手册）的指令**——不是直接产生新的 Playbook（怕旧信息被弄坏），而是去修改旧的 Playbook，把 Context_t 变成 Context_t₊₁。
 
@@ -315,7 +315,7 @@ Subagent 可以看作是一种**自主的压缩行为**。当主 Agent 在某个
 
 ![RLM 与 GPT-5 对比实验结果](key_slides/p1_slide_0060.jpg)
 
-这篇论文号称发明了一个"可以吃无穷长输入"的新语言模型，但实际上做的就是 Context Engineering：
+[这篇关于 Recursive Language Models 的论文](https://arxiv.org/abs/2512.24601)号称发明了一个"可以吃无穷长输入"的新语言模型，但实际上做的就是 Context Engineering：
 
 1. 非常长的 Context 通通放到硬盘里（N）
 2. 只把非常小一部分 Metadata（Context 有多长、被切成几段、存在哪里）放到 Prompt 里（P）
