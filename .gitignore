@@ -21,3 +21,7 @@
 
 # Node
 node_modules/
+
+# Raw data directories
+bilibili_audio/
+bilibili_video/
