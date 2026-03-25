@@ -1,0 +1,99 @@
+https://arxiv.org/abs/2205.11916
+  Large Language Models are Zero-Shot Reasoners
+
+https://arxiv.org/abs/2206.03931
+  Learning to Generate Prompts for Dialogue Generation through Reinforcement Learning
+
+https://arxiv.org/abs/2304.03442
+  Generative Agents: Interactive Simulacra of Human Behavior
+
+https://arxiv.org/abs/2307.03172
+  Lost in the Middle: How Language Models Use Long Contexts
+
+https://arxiv.org/abs/2308.15022
+  Recursively Summarizing Enables Long-Term Dialogue Memory in Large Language Models
+
+https://arxiv.org/abs/2309.03409
+  Large Language Models as Optimizers
+
+https://arxiv.org/abs/2310.03128
+  MetaTool Benchmark for Large Language Models: Deciding Whether to Use Tools and Which to Use
+
+https://arxiv.org/abs/2312.16171
+  Principled Instructions Are All You Need for Questioning LLaMA-1/2, GPT-3.5/4
+
+https://arxiv.org/abs/2406.07155
+  Scaling Large Language Model-based Multi-Agent Collaboration
+
+https://arxiv.org/abs/2406.08747
+  StreamBench: Towards Benchmarking Continuous Improvement of Language Agents
+
+https://arxiv.org/abs/2409.04109
+  Can LLMs Generate Novel Research Ideas? A Large-Scale Human Study with 100+ NLP Researchers
+
+https://arxiv.org/abs/2501.01652
+  MIRAGE: Exploring How Large Language Models Perform in Complex Social Interactive Environments
+
+https://arxiv.org/abs/2501.16214
+  Provence: efficient and robust context pruning for retrieval-augmented generation
+
+https://arxiv.org/abs/2502.11271
+  OctoTools: An Agentic Framework with Extensible Tools for Complex Reasoning
+
+https://arxiv.org/abs/2502.12110
+  A-MEM: Agentic Memory for LLM Agents
+
+https://arxiv.org/abs/2504.19413
+  Mem0: Building Production-Ready AI Agents with Scalable Long-Term Memory
+
+https://arxiv.org/abs/2505.03275
+  RAG-MCP: Mitigating Prompt Bloat in LLM Tool Selection via Retrieval-Augmented Generation
+
+https://arxiv.org/abs/2505.06120
+  LLMs Get Lost In Multi-Turn Conversation
+
+https://arxiv.org/abs/2506.01056
+  MCP-Zero: Active Tool Discovery for Autonomous LLM Agents
+
+https://arxiv.org/abs/2506.06326
+  Memory OS of AI Agent
+
+https://arxiv.org/abs/2508.21433
+  The Complexity Trap: Simple Observation Masking Is as Efficient as LLM Summarization for Agent Context Management
+
+https://arxiv.org/abs/2509.23586
+  Reducing Cost of LLM Agents with Trajectory Reduction
+
+https://arxiv.org/abs/2510.00615
+  ACON: Optimizing Context Compression for Long-horizon LLM Agents
+
+https://arxiv.org/abs/2510.04618
+  Agentic Context Engineering: Evolving Contexts for Self-Improving Language Models
+
+https://arxiv.org/abs/2510.06727
+  Scaling LLM Multi-turn RL with End-to-end Summarization-based Context Management
+
+https://arxiv.org/abs/2510.11967
+  Scaling Long-Horizon LLM Agent via Context-Folding
+
+https://arxiv.org/abs/2510.24699
+  AgentFold: Long-Horizon Web Agents with Proactive Context Management
+
+https://arxiv.org/abs/2512.24601
+  Recursive Language Models
+
+https://arxiv.org/abs/2601.12323
+  MARO: Learning Stronger Reasoning from Social Interaction
+
+https://arxiv.org/abs/2601.16746
+  SWE-Pruner: Self-Adaptive Context Pruning for Coding Agents
+
+https://arxiv.org/abs/2602.07432
+  The Moltbook Illusion: Separating Human Influence from Emergent Behavior in AI Agent Societies
+
+https://arxiv.org/abs/2602.13284
+  Agents in the Wild: Safety, Society, and the Illusion of Sociality on Moltbook
+
+https://arxiv.org/abs/2602.17221
+  From Labor to Collaboration: A Methodological Experiment Using AI Agents to Augment Research Perspectives in Taiwan's Humanities and Social Sciences
+

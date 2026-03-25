@@ -1,0 +1,22 @@
+# macOS
+.DS_Store
+
+# LaTeX auxiliary files
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# Editor
+.vscode/
+*.swp
+*~
+
+# Archive
+*.zip
+
+# Node
+node_modules/
