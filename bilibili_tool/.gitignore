@@ -18,8 +18,6 @@ publish_md/*.md
 publish_md/*.pptx
 publish_md/images/
 publish_md/Makefile
-publish_md/md2pdf.py
-publish_md/md2pptx.py
 
 # Whisper intermediate outputs
 whisper_part*.txt

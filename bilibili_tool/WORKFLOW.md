@@ -406,8 +406,7 @@ bilibili_tool/
 │   └── images/                   # 幻灯片图片
 │
 ├── publish_md/                   # Markdown 模式输出
-│   ├── Makefile                  # Python 转换系统
-│   ├── md2pdf.py                 # Markdown → PDF 转换器
+│   ├── Makefile                  # Python 转换系统（引用上级目录脚本）
 │   ├── transcript.md             # 英文逐字稿 Markdown
 │   ├── transcript.pdf            # ✅ 英文 PDF
 │   ├── transcript_zh.md          # 中文翻译版 [大模型生成]

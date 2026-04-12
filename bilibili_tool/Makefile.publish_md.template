@@ -13,7 +13,9 @@
 #   make check-deps   # verify Python dependencies
 
 PYTHON   = python3
-MD2PDF   = md2pdf.py
+PARENT   = ..
+MD2PDF   = $(PARENT)/md2pdf.py
+MD2PPTX  = $(PARENT)/md2pptx.py
 
 # Source files
 MD_TRANSCRIPT    = transcript.md
@@ -51,7 +53,7 @@ $(PDF_TRANSCRIPT_ZH): $(MD_TRANSCRIPT_ZH) $(wildcard images/*.jpg)
 pptx: $(PPTX_SLIDES)
 
 $(PPTX_SLIDES): $(MD_SLIDES) $(wildcard images/*.jpg)
-	$(PYTHON) md2pptx.py --input $(MD_SLIDES) --output $@ --images images/
+	$(PYTHON) $(MD2PPTX) --input $(MD_SLIDES) --output $@ --images images/
 	@echo "  ✓ PPTX: $@"
 
 # ── Dependency check ─────────────────────────────────────────────────────────

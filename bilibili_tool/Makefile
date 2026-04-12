@@ -264,8 +264,6 @@ $(DOC_FILE): $(TRANSCRIPT) $(KEY_SLIDES_DIR)/.done $(VIDEO)
 	python3 gen_transcript_md.py --base . --title "$(TITLE)" --url "$(URL)" \
 		--duration $(DURATION) --segment-sec $(SEGMENT_SEC) --output "$(DOC_FILE)"
 	@cp $(PUB_TEMPLATE) $(PUB_MAKEFILE)
-	@cp md2pdf.py $(PUBLISH_DIR)/md2pdf.py
-	@cp md2pptx.py $(PUBLISH_DIR)/md2pptx.py
 	@echo "  ✓ Markdown: $@ ($$(wc -c < "$@") bytes)"
 
 endif
@@ -297,7 +295,6 @@ $(BEAMER_FILE): $(DOC_FILE)
 	python3 gen_presentation.py beamer --input $(BEAMER_INPUT) --output $(BEAMER_FILE) \
 		--title "$(TITLE)" --url "$(URL)"
 	@cp $(PUB_TEMPLATE) $(PUB_MAKEFILE) 2>/dev/null || true
-	@cp md2pptx.py $(PUBLISH_DIR)/md2pptx.py 2>/dev/null || true
 	@echo "  ✓ Presentation: $@ ($$(wc -c < "$@") bytes)"
 
 # ── Step 8: Compile PDF ─────────────────────────────────────────────────────
