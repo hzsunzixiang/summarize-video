@@ -46,7 +46,7 @@ TEX_FILE       := $(PDF_DIR)/transcript.tex
 PDF_FILE       := $(PDF_DIR)/transcript.pdf
 
 # Whisper model auto-detect
-WHISPER_MODELS := $(HOME)/.summarize/cache/whisper-cpp/models
+WHISPER_MODELS ?= $(HOME)/.summarize/cache/whisper-cpp/models
 WHISPER_MODEL  := $(shell \
 	if [ -f "$(WHISPER_MODELS)/ggml-large-v3-turbo.bin" ]; then \
 		echo "$(WHISPER_MODELS)/ggml-large-v3-turbo.bin"; \

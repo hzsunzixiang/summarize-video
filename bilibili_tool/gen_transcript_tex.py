@@ -102,19 +102,20 @@ def read_transcript(base_dir, segment_sec=600):
     return paragraphs
 
 
-def generate_tex(paragraphs, slides, title="Video Transcript", url=""):
+def generate_tex(paragraphs, slides, title="Video Transcript", url="", segment_sec=600):
     """Generate LaTeX document with transcript and slides interleaved."""
     slide_idx = 0
     tex = []
 
     # Determine section boundaries from paragraphs
-    max_section = max(ts // 600 for ts, _ in paragraphs) if paragraphs else 0
+    max_section = max(ts // segment_sec for ts, _ in paragraphs) if paragraphs else 0
 
     # Auto-generate section titles
+    section_min = segment_sec // 60  # minutes per section
     section_titles = []
     for sec_idx in range(max_section + 1):
-        start_min = sec_idx * 10
-        end_min = (sec_idx + 1) * 10
+        start_min = sec_idx * section_min
+        end_min = (sec_idx + 1) * section_min
         section_titles.append(f"Part {sec_idx + 1} ({start_min:02d}:00 -- {end_min:02d}:00)")
 
     # Preamble
@@ -211,7 +212,7 @@ def generate_tex(paragraphs, slides, title="Video Transcript", url=""):
     current_section = -1
 
     for ts, para_text in paragraphs:
-        new_section = min(ts // 600, len(section_titles) - 1)
+        new_section = min(ts // segment_sec, len(section_titles) - 1)
 
         if new_section != current_section:
             current_section = new_section
@@ -282,7 +283,7 @@ def main():
 
     print(f"Paragraphs: {len(paragraphs)}")
 
-    tex_content = generate_tex(paragraphs, slides, args.title, args.url)
+    tex_content = generate_tex(paragraphs, slides, args.title, args.url, args.segment_sec)
 
     out_path = args.output or os.path.join(args.base, "pdf", "transcript.tex")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
