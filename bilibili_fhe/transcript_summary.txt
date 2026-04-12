@@ -1,0 +1,21 @@
+## Overview of Craig Gentry's Talk on Fully Homomorphic Encryption (FHE)
+
+Craig Gentry, a research fellow at the Algorand Foundation and a pioneer in fully homomorphic encryption (FHE), delivered a talk tracing the evolution of FHE over the past decade. He began by highlighting his 2009 breakthrough, which proposed the first plausibly secure FHE scheme, albeit with impractical performance initially. Gentry emphasized how FHE enables computations on encrypted data without decryption, a concept rooted in the 1978 work of Rivest, Adleman, and Dertouzos, who observed multiplicative properties in RSA ciphertexts. This property allows for encrypted cloud computing, where data remains confidential even during processing.
+
+## Evolution and Performance Improvements in FHE
+
+Gentry outlined four generations of FHE schemes, each marked by significant efficiency gains. The first generation, including his initial scheme, was computationally prohibitive. The second generation, based on the Learning With Errors (LWE) problem, introduced techniques like modulus reduction and SIMD operations, enabling parallel processing of plaintext slots within ciphertexts. By 2020, bootstrapping—a key operation to reduce noise—achieved amortized times of 0.9 milliseconds per plaintext bit in second-generation schemes like HElib. The third generation, exemplified by the GSW scheme, further optimized bootstrapping, while the fourth generation (CKKS) introduced support for floating-point numbers, critical for applications like neural network evaluation. Recent advancements, including GPU acceleration, have reduced bootstrapping to sub-microsecond per bit, showcasing FHE's transition from theoretical curiosity to practical tool.
+
+## Applications and Standardization Efforts
+
+FHE has found applications in genomic analysis, private information retrieval (PIR), and neural network evaluation. For instance, a 2020 implementation achieved speech recognition among 100 voices in under a second using FHE. In PIR, modern FHE schemes now rival the efficiency of unencrypted database queries, with one prototype processing a million 30KB files in 86 seconds—comparable to AES encryption. Hardware acceleration efforts, including a DARPA-funded initiative, aim to further close this gap. Gentry also noted ongoing standardization by NIST, where lattice-based cryptography (the foundation of FHE) dominates post-quantum finalists. Tools like Google's transpiler are improving usability, enabling non-experts to work with encrypted data.
+
+## Cryptographic Foundations and Future Directions
+
+Gentry explored the mathematical underpinnings of FHE, contrasting the *cryptographic* approach (building from assumptions like LWE) with the *mathematical* approach (starting with homomorphisms and hardening them for security). He illustrated this with Goldwasser-Micali encryption, which masks a homomorphism using quadratic residuosity. However, such schemes fail against quantum attacks, necessitating ring homomorphisms in modern FHE. A key challenge is managing noise growth and ciphertext expansion, addressed via techniques like re-linearization and bootstrapping. Gentry concluded by pondering whether FHE inherently requires unstructured ciphertext spaces (magmas) and speculated about future schemes, such as those leveraging non-solvable groups or multivariate cryptography, though significant hurdles remain.  
+
+*The amortized time per plaintext bit for bootstrapping is 0.9 milliseconds.*  
+*FHE enables computations on encrypted data without decryption, separating data processing from access.*
+via model openai/DeepSeek-V3-0324
+
+59s · openai/DeepSeek-V3-0324 · ↑11k ↓700 Δ12k

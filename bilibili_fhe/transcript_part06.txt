@@ -1,0 +1,8 @@
+The transcript discusses advanced concepts in fully homomorphic encryption (FHE), focusing on ciphertext structure and evaluation. The speaker explains that the ciphertext space lacks the original ring structure of the plaintext space, instead forming a *magma*—a minimally structured algebraic system with commutative but non-associative operations. This unstructured nature may be inherent to FHE schemes, as more structured approaches (like solvable groups) have proven vulnerable to quantum attacks.  
+
+The analysis highlights challenges with non-solvable groups, such as potential quantum subgroup attacks and issues with linearity. Representation theory has been used to break schemes like Burrington groups, demonstrating the fragility of structured ciphertext spaces. The speaker speculates about alternative approaches, such as leveraging multivariate cryptography to create ciphertext spaces with random-like operations, akin to existing lattice-based schemes.  
+
+Despite unresolved challenges, the speaker expresses optimism about future breakthroughs in FHE. The discussion underscores the tension between achieving functional homomorphic operations and maintaining cryptographic security, particularly against quantum threats. *It would be cool to have a HFE scheme just for the acronym at least* reflects both the technical aspirations and playful curiosity driving research in this field.
+via model openai/DeepSeek-V3-0324
+
+24s · openai/DeepSeek-V3-0324 · ↑1.5k ↓236 Δ1.7k

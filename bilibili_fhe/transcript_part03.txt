@@ -1,0 +1,23 @@
+## Homomorphic Encryption: Two Development Approaches  
+
+The transcript outlines two primary methods for developing homomorphic encryption schemes. The first, termed *the cryptographic way*, begins with established cryptographic assumptions, constructs public key encryption atop them, and then attempts to introduce homomorphic properties. This approach benefits from inherent security due to its foundation in proven assumptions but may struggle to achieve homomorphism unless the initial scheme coincidentally supports it. The second, *the mathematical way*, starts with homomorphisms—structure-preserving maps between algebraic systems—and later addresses security by masking these structures to achieve semantic security. While this method enables exploration of diverse mathematical frameworks, it risks producing insecure schemes, requiring iterative patching.  
+
+## Homomorphisms and Complexity Theory  
+
+A homomorphism preserves operations between algebraic structures, illustrated by the example of mapping addition to multiplication via the exponential function. The core idea of homomorphic encryption emerges when these homomorphisms intersect with complexity theory: operations (rightward arrows in a commutative diagram) remain computationally easy, while homomorphisms (downward arrows) become hard without a trapdoor or secret key. This framework allows ciphertext operations to mirror plaintext operations without revealing the underlying data, as decryption remains infeasible without the key.  
+
+## Constructing Public Key Homomorphic Encryption  
+
+The transcript describes a generic method to convert private key homomorphic encryption (supporting modular addition) into public key encryption. The public key consists of multiple encryptions of zero and one, while encryption involves homomorphically adding a random subset of these ciphertexts to produce a new ciphertext encoding the message. This approach simplifies security proofs, as the encryption procedure's security hinges only on the indistinguishability of ciphertexts in the public key. The method aligns with cryptographic principles by leveraging homomorphic properties without compromising security.  
+
+## Example: The Legendre Symbol as a Homomorphism  
+
+A hypothetical example using the Legendre symbol demonstrates how mathematical homomorphisms can inspire encryption schemes. The Legendre symbol, a multiplicative homomorphism from integers modulo a prime *p* to {−1, 1}, forms a commutative diagram where decryption applies the symbol. However, *p* must remain secret to prevent trivial decryption. This illustrates the mathematical way's potential—and pitfalls—as the scheme's security depends on obscuring the underlying homomorphism.  
+
+*The pro of this approach is that it sort of allows you to look at different mathematical structures and consider whether they would be useful for cryptography.*  
+*The con is, well, your scheme is likely to be broken and then you're one of those people that proposes lots of broken schemes.*  
+
+The speaker emphasizes that both approaches—cryptographic and mathematical—are valuable, even within the same researcher's workflow, as they offer complementary insights into homomorphic encryption design.
+via model openai/DeepSeek-V3-0324
+
+32s · openai/DeepSeek-V3-0324 · ↑2.2k ↓569 Δ2.7k
