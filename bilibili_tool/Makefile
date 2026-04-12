@@ -217,6 +217,9 @@ distclean: clean
 	rm -f whisper_part*.txt $(TRANSCRIPT)
 	rm -f $(PDF_FILE) $(TEX_FILE)
 	rm -rf $(PDF_DIR)/images
+	@# Remove empty pdf/ directory if nothing left
+	@rmdir $(PDF_DIR) 2>/dev/null || true
+	rm -rf __pycache__
 
 # ── Help ─────────────────────────────────────────────────────────────────────
 help:
