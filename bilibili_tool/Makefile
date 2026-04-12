@@ -49,16 +49,29 @@ else
   RESOLVED_MODE := $(PUBLISH_MODE)
 endif
 
+# ── Resolve TRANSLATE_ZH ──────────────────────────────────────────────────────
+# auto → decide based on WHISPER_LANG (translate if source is not Chinese)
+ifeq ($(TRANSLATE_ZH),auto)
+  ifeq ($(WHISPER_LANG),zh)
+    RESOLVED_TRANSLATE := no
+  else
+    RESOLVED_TRANSLATE := yes
+  endif
+else
+  RESOLVED_TRANSLATE := $(TRANSLATE_ZH)
+endif
+
 # ── Derived variables ────────────────────────────────────────────────────────
+# Support both Bilibili (BV...) and YouTube (watch?v=... or youtu.be/...) URLs
 BV_ID          := $(shell echo "$(URL)" | grep -oE 'BV[a-zA-Z0-9]+' | head -1)
-VIDEO          := $(BV_ID).mp4
+YT_ID          := $(shell echo "$(URL)" | grep -oP '(?:v=|youtu\.be/)[a-zA-Z0-9_-]+' | head -1 | sed 's/^v=//')
+VIDEO_ID       := $(if $(BV_ID),$(BV_ID),$(YT_ID))
+VIDEO          := $(VIDEO_ID).mp4
 AUDIO          := audio.mp3
 PARTS_DIR      := audio_parts
 SLIDES_DIR     := slides
 KEY_SLIDES_DIR := key_slides
 TRANSCRIPT     := full_whisper_transcript.txt
-SUMMARY_EN     := full_transcript.txt
-SUMMARY_ZH     := full_transcript_zh.txt
 
 # Mode-specific directories and files
 ifeq ($(RESOLVED_MODE),tex)
@@ -66,6 +79,7 @@ ifeq ($(RESOLVED_MODE),tex)
   PUB_TEMPLATE   := Makefile.publish_tex.template
   DOC_FILE       := $(PUBLISH_DIR)/transcript.tex
   DOC_PDF        := $(PUBLISH_DIR)/transcript.pdf
+  DOC_ZH_FILE    := $(PUBLISH_DIR)/transcript_zh.tex
   BEAMER_FILE    := $(PUBLISH_DIR)/slides.tex
   BEAMER_OUT     := $(PUBLISH_DIR)/slides.pdf
 else
@@ -73,6 +87,7 @@ else
   PUB_TEMPLATE   := Makefile.publish_md.template
   DOC_FILE       := $(PUBLISH_DIR)/transcript.md
   DOC_PDF        := $(PUBLISH_DIR)/transcript.pdf
+  DOC_ZH_FILE    := $(PUBLISH_DIR)/transcript_zh.md
   BEAMER_FILE    := $(PUBLISH_DIR)/slides.md
   BEAMER_OUT     := $(PUBLISH_DIR)/slides.pptx
 endif
@@ -123,8 +138,8 @@ presentation: check-url check-deps beamer
 
 # ── Validation ───────────────────────────────────────────────────────────────
 check-url:
-ifeq ($(BV_ID),)
-	$(error URL is required. Usage: make URL="https://www.bilibili.com/video/BVxxxxxxxx/" all)
+ifeq ($(VIDEO_ID),)
+	$(error URL is required. Usage: make URL="https://www.bilibili.com/video/BVxxxxxxxx/" or YouTube URL)
 endif
 
 check-deps: check-deps-common check-deps-$(RESOLVED_MODE)
@@ -143,12 +158,14 @@ check-deps-tex:
 check-deps-md:
 	@python3 -c "import markdown" 2>/dev/null || { echo "WARNING: markdown not found. Install: pip3 install markdown"; }
 	@python3 -c "import weasyprint" 2>/dev/null || { echo "WARNING: weasyprint not found. Install: pip3 install weasyprint"; }
+	@python3 -c "import pptx" 2>/dev/null || { echo "WARNING: python-pptx not found. Install: pip3 install python-pptx"; }
+	@python3 -c "from PIL import Image" 2>/dev/null || { echo "WARNING: Pillow not found. Install: pip3 install Pillow"; }
 
 # ── Step 1: Download video ──────────────────────────────────────────────────
 download: $(VIDEO)
 
 $(VIDEO):
-	@echo "[1/7] Downloading video $(BV_ID)..."
+	@echo "[1/7] Downloading video $(VIDEO_ID)..."
 	yt-dlp -f "$(VIDEO_FORMAT)" -o "$@" --merge-output-format mp4 "$(URL)"
 	@echo "  ✓ Downloaded: $@ ($$(du -h "$@" | cut -f1))"
 
@@ -253,21 +270,31 @@ $(DOC_FILE): $(TRANSCRIPT) $(KEY_SLIDES_DIR)/.done $(VIDEO)
 
 endif
 
-# ── Step 7a: Translate English → Chinese ────────────────────────────────────
-translate: $(SUMMARY_ZH)
+# ── Step 7a: Translate transcript → Chinese (scaffold, LLM replaces this) ───
+# TRANSLATE_ZH controls whether this step runs:
+#   yes  → always translate
+#   no   → skip
+#   auto → resolved based on WHISPER_LANG (see RESOLVED_TRANSLATE)
+translate: $(DOC_ZH_FILE)
 
-$(SUMMARY_ZH): $(SUMMARY_EN)
-	@echo "[7a] Translating English summary to Chinese..."
-	python3 gen_presentation.py translate --input $(SUMMARY_EN) --output $(SUMMARY_ZH)
+$(DOC_ZH_FILE): $(DOC_FILE)
+ifeq ($(RESOLVED_TRANSLATE),yes)
+	@echo "[7a] Translating transcript to Chinese (scaffold)..."
+	python3 gen_presentation.py translate --input $(DOC_FILE) --output $(DOC_ZH_FILE)
 	@echo "  ✓ Chinese translation: $@ ($$(wc -c < "$@") bytes)"
+else
+	@echo "[7a] Skipping translation (TRANSLATE_ZH=$(TRANSLATE_ZH), WHISPER_LANG=$(WHISPER_LANG))"
+endif
 
-# ── Step 7b: Generate Beamer/PPTX slides ────────────────────────────────────
+# ── Step 7b: Generate Beamer/PPTX slides (scaffold, LLM replaces this) ──────
+# Input: translated transcript (or original if no translation)
 beamer: $(BEAMER_FILE)
 
-$(BEAMER_FILE): $(SUMMARY_ZH)
-	@echo "[7b] Generating presentation..."
+$(BEAMER_FILE): $(DOC_FILE)
+	@echo "[7b] Generating presentation (scaffold)..."
 	@mkdir -p $(PUBLISH_DIR)
-	python3 gen_presentation.py beamer --input $(SUMMARY_ZH) --output $(BEAMER_FILE) \
+	$(eval BEAMER_INPUT := $(shell test -f $(DOC_ZH_FILE) && echo $(DOC_ZH_FILE) || echo $(DOC_FILE)))
+	python3 gen_presentation.py beamer --input $(BEAMER_INPUT) --output $(BEAMER_FILE) \
 		--title "$(TITLE)" --url "$(URL)"
 	@cp $(PUB_TEMPLATE) $(PUB_MAKEFILE) 2>/dev/null || true
 	@cp md2pptx.py $(PUBLISH_DIR)/md2pptx.py 2>/dev/null || true
@@ -292,7 +319,6 @@ distclean: clean
 	rm -f *.mp4 $(AUDIO)
 	rm -rf $(PARTS_DIR) $(SLIDES_DIR) $(KEY_SLIDES_DIR)
 	rm -f whisper_part*.txt $(TRANSCRIPT)
-	rm -f $(SUMMARY_ZH)
 	rm -rf publish_tex publish_md
 	rm -rf __pycache__
 
@@ -356,10 +382,10 @@ help:
 info:
 	@echo "Configuration (from config.env + command line):"
 	@echo "  URL:            $(URL)"
-	@echo "  BV_ID:          $(BV_ID)"
+	@echo "  VIDEO_ID:       $(VIDEO_ID) (BV_ID=$(BV_ID), YT_ID=$(YT_ID))"
 	@echo "  TITLE:          $(TITLE)"
 	@echo "  PUBLISH_MODE:   $(PUBLISH_MODE) → resolved: $(RESOLVED_MODE)"
-	@echo "  TRANSLATE_ZH:   $(TRANSLATE_ZH)"
+	@echo "  TRANSLATE_ZH:   $(TRANSLATE_ZH) → resolved: $(RESOLVED_TRANSLATE)"
 	@echo "  PUBLISH_DIR:    $(PUBLISH_DIR)"
 	@echo "  WHISPER_LANG:   $(WHISPER_LANG)"
 	@echo "  SEGMENT_SEC:    $(SEGMENT_SEC)"

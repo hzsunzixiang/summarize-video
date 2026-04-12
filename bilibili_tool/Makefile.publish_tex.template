@@ -18,15 +18,23 @@
 TEX_TRANSCRIPT = transcript.tex
 PDF_TRANSCRIPT = $(TEX_TRANSCRIPT:.tex=.pdf)
 
-# Beamer slides (beamer class) — uncomment when slides.tex is generated
+# Chinese translation (article class) — auto-detected
+TEX_TRANSCRIPT_ZH = transcript_zh.tex
+PDF_TRANSCRIPT_ZH = $(TEX_TRANSCRIPT_ZH:.tex=.pdf)
+
+# Beamer slides (beamer class) — auto-detected
 TEX_BEAMER     = slides.tex
 PDF_BEAMER     = $(TEX_BEAMER:.tex=.pdf)
 
 XELATEX  = xelatex
 FLAGS    = -interaction=nonstopmode -halt-on-error
 
-# Collect all PDF targets (add $(PDF_BEAMER) when ready)
+# Collect all PDF targets (auto-detect which source files exist)
 ALL_PDFS = $(PDF_TRANSCRIPT)
+# Add Chinese translation if transcript_zh.tex exists
+ifneq ($(wildcard $(TEX_TRANSCRIPT_ZH)),)
+ALL_PDFS += $(PDF_TRANSCRIPT_ZH)
+endif
 # Add beamer if slides.tex exists
 ifneq ($(wildcard $(TEX_BEAMER)),)
 ALL_PDFS += $(PDF_BEAMER)
@@ -43,6 +51,13 @@ transcript: $(PDF_TRANSCRIPT)
 $(PDF_TRANSCRIPT): $(TEX_TRANSCRIPT) $(wildcard images/*.jpg)
 	$(XELATEX) $(FLAGS) $(TEX_TRANSCRIPT)
 	$(XELATEX) $(FLAGS) $(TEX_TRANSCRIPT)
+
+# Build only the Chinese translation
+transcript-zh: $(PDF_TRANSCRIPT_ZH)
+
+$(PDF_TRANSCRIPT_ZH): $(TEX_TRANSCRIPT_ZH) $(wildcard images/*.jpg)
+	$(XELATEX) $(FLAGS) $(TEX_TRANSCRIPT_ZH)
+	$(XELATEX) $(FLAGS) $(TEX_TRANSCRIPT_ZH)
 
 # Build only the beamer version
 beamer: $(PDF_BEAMER)
@@ -72,4 +87,4 @@ watch:
 	@echo "Watching *.tex for changes..."
 	fswatch -o *.tex | xargs -n1 -I{} make quick
 
-.PHONY: all transcript beamer quick clean distclean watch
+.PHONY: all transcript transcript-zh beamer quick clean distclean watch

@@ -25,10 +25,6 @@ publish_md/md2pptx.py
 whisper_part*.txt
 full_whisper_transcript.txt
 
-# LLM-generated intermediate files
-full_transcript.txt
-full_transcript_zh.txt
-
 # Office temp files
 ~$*
 

@@ -14,8 +14,8 @@ md2pptx.py can convert to PPTX. It extracts section headings,
 key bullet points, and image references from the transcript.
 
 Usage:
-    python3 gen_presentation.py translate --input full_transcript.txt --output full_transcript_zh.txt
-    python3 gen_presentation.py beamer --input full_transcript_zh.txt --output publish_md/slides.md \
+    python3 gen_presentation.py translate --input publish_md/transcript.md --output publish_md/transcript_zh.md
+    python3 gen_presentation.py beamer --input publish_md/transcript_zh.md --output publish_md/slides.md \
         --title "Title" --url "URL"
 
 Note:
@@ -35,6 +35,8 @@ def cmd_translate(args):
 
     In production, the LLM will perform high-quality translation.
     This placeholder simply copies the file so the pipeline can proceed.
+
+    Supports both Markdown (.md) and LaTeX (.tex) input files.
     """
     if not os.path.exists(args.input):
         print(f"ERROR: Input file not found: {args.input}")
@@ -43,11 +45,18 @@ def cmd_translate(args):
     with open(args.input, "r", encoding="utf-8") as f:
         content = f.read()
 
-    # For now, just copy the content (LLM will do real translation)
-    header = (
-        "<!-- NOTE: This is a placeholder copy. "
-        "In production, the LLM Skill will translate this to Chinese. -->\n\n"
-    )
+    # Detect file type and add appropriate placeholder header
+    is_tex = args.input.endswith(".tex") or args.output.endswith(".tex")
+    if is_tex:
+        header = (
+            "% NOTE: This is a placeholder copy.\n"
+            "% In production, the LLM Skill will translate this to Chinese.\n\n"
+        )
+    else:
+        header = (
+            "<!-- NOTE: This is a placeholder copy. "
+            "In production, the LLM Skill will translate this to Chinese. -->\n\n"
+        )
 
     with open(args.output, "w", encoding="utf-8") as f:
         f.write(header + content)
@@ -91,10 +100,12 @@ def cmd_beamer(args):
 
 
 def generate_slides_from_transcript(content, title, url):
-    """Extract key content from transcript Markdown to create slides.
+    """Extract key content from transcript to create slides.
+
+    Supports both Markdown and LaTeX input formats.
 
     Strategy:
-    1. Parse sections (## headings) from the transcript
+    1. Parse sections (## headings or \\section{} commands) from the transcript
     2. For each section, extract:
        - The heading as slide title
        - First 3-5 sentences as bullet points
@@ -106,24 +117,44 @@ def generate_slides_from_transcript(content, title, url):
     current_section = None
 
     for line in lines:
-        # Match ## Section headings (but not # or ###)
-        if re.match(r'^## ', line):
+        # Match Markdown ## headings or LaTeX \section{...}
+        md_match = re.match(r'^## (.+)', line)
+        tex_match = re.match(r'\\section\{(.+?)\}', line)
+
+        if md_match or tex_match:
             if current_section:
                 sections.append(current_section)
+            heading = md_match.group(1).strip() if md_match else tex_match.group(1).strip()
             current_section = {
-                "title": line.lstrip("# ").strip(),
+                "title": heading,
                 "text_lines": [],
                 "images": [],
             }
             continue
 
         if current_section is not None:
-            # Collect images
+            # Collect images (Markdown format)
             img_match = re.match(r'!\[([^\]]*)\]\(([^)]+)\)', line.strip())
+            # Also match LaTeX \keyslide{image}{caption} or \includegraphics{image}
+            tex_img_match = re.match(r'\\keyslide\{([^}]+)\}\{([^}]*)\}', line.strip())
+            tex_incl_match = re.match(r'.*\\includegraphics.*\{([^}]+)\}', line.strip())
+
             if img_match:
                 current_section["images"].append({
                     "caption": img_match.group(1),
                     "path": img_match.group(2),
+                })
+                continue
+            elif tex_img_match:
+                current_section["images"].append({
+                    "caption": tex_img_match.group(2),
+                    "path": "images/" + tex_img_match.group(1),
+                })
+                continue
+            elif tex_incl_match:
+                current_section["images"].append({
+                    "caption": "",
+                    "path": "images/" + tex_incl_match.group(1),
                 })
                 continue
 
