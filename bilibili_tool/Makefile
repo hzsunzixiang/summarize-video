@@ -33,6 +33,7 @@ SEGMENT_SEC    ?= 600
 FRAME_INTERVAL ?= 30
 DEDUP_THRESH   ?= 20
 VIDEO_FORMAT   ?= bestvideo[height<=720]+bestaudio/best[height<=720]
+COOKIES_BROWSER ?=
 PUBLISH_MODE   ?= auto
 TRANSLATE_ZH   ?= auto
 
@@ -164,9 +165,12 @@ check-deps-md:
 # ── Step 1: Download video ──────────────────────────────────────────────────
 download: $(VIDEO)
 
+# Build yt-dlp cookie flag if COOKIES_BROWSER is set
+YTDLP_COOKIE_FLAG := $(if $(COOKIES_BROWSER),--cookies-from-browser $(COOKIES_BROWSER),)
+
 $(VIDEO):
 	@echo "[1/7] Downloading video $(VIDEO_ID)..."
-	yt-dlp -f "$(VIDEO_FORMAT)" -o "$@" --merge-output-format mp4 "$(URL)"
+	yt-dlp $(YTDLP_COOKIE_FLAG) -f "$(VIDEO_FORMAT)" -o "$@" --merge-output-format mp4 "$(URL)"
 	@echo "  ✓ Downloaded: $@ ($$(du -h "$@" | cut -f1))"
 
 # ── Step 2: Extract audio ───────────────────────────────────────────────────
