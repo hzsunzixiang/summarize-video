@@ -8,6 +8,7 @@ audio_parts/
 slides/
 key_slides/
 pdf/*.pdf
+pdf/*.tex
 pdf/images/
 
 # Whisper intermediate outputs
