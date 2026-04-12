@@ -1,11 +1,11 @@
-# Template: Makefile for pdf/ directory
+# Template: Makefile for publish_tex/ directory
 # ======================================
-# This template is copied to pdf/Makefile during the pipeline.
+# This template is copied to publish_tex/Makefile during the pipeline.
 # LLM or user may customize it (e.g. add beamer targets) before compiling.
 #
 # Compile with xelatex (CJK support)
 #
-# Usage (inside pdf/ directory):
+# Usage (inside publish_tex/ directory):
 #   make              # build all PDFs
 #   make transcript   # build transcript PDF only
 #   make beamer       # build beamer slides PDF only
@@ -18,15 +18,19 @@
 TEX_TRANSCRIPT = transcript.tex
 PDF_TRANSCRIPT = $(TEX_TRANSCRIPT:.tex=.pdf)
 
-# Beamer slides (beamer class) — uncomment when available
-# TEX_BEAMER     = slides.tex
-# PDF_BEAMER     = $(TEX_BEAMER:.tex=.pdf)
+# Beamer slides (beamer class) — uncomment when slides.tex is generated
+TEX_BEAMER     = slides.tex
+PDF_BEAMER     = $(TEX_BEAMER:.tex=.pdf)
 
 XELATEX  = xelatex
 FLAGS    = -interaction=nonstopmode -halt-on-error
 
 # Collect all PDF targets (add $(PDF_BEAMER) when ready)
 ALL_PDFS = $(PDF_TRANSCRIPT)
+# Add beamer if slides.tex exists
+ifneq ($(wildcard $(TEX_BEAMER)),)
+ALL_PDFS += $(PDF_BEAMER)
+endif
 
 # ── Build targets ────────────────────────────────────────────────────────────
 
@@ -40,12 +44,12 @@ $(PDF_TRANSCRIPT): $(TEX_TRANSCRIPT) $(wildcard images/*.jpg)
 	$(XELATEX) $(FLAGS) $(TEX_TRANSCRIPT)
 	$(XELATEX) $(FLAGS) $(TEX_TRANSCRIPT)
 
-# Build only the beamer version (uncomment when available)
-# beamer: $(PDF_BEAMER)
-#
-# $(PDF_BEAMER): $(TEX_BEAMER) $(wildcard images/*.jpg)
-# 	$(XELATEX) $(FLAGS) $(TEX_BEAMER)
-# 	$(XELATEX) $(FLAGS) $(TEX_BEAMER)
+# Build only the beamer version
+beamer: $(PDF_BEAMER)
+
+$(PDF_BEAMER): $(TEX_BEAMER) $(wildcard images/*.jpg)
+	$(XELATEX) $(FLAGS) $(TEX_BEAMER)
+	$(XELATEX) $(FLAGS) $(TEX_BEAMER)
 
 # Quick compile (single pass, TOC may be wrong)
 quick:

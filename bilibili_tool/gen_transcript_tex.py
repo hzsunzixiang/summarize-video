@@ -274,7 +274,7 @@ def main():
     )
     parser.add_argument(
         "--output", "-o", default=None,
-        help="Output .tex file path (default: <base>/pdf/transcript.tex)"
+        help="Output .tex file path (default: <base>/publish_tex/transcript.tex)"
     )
     args = parser.parse_args()
 
@@ -285,7 +285,7 @@ def main():
 
     tex_content = generate_tex(paragraphs, slides, args.title, args.url, args.segment_sec)
 
-    out_path = args.output or os.path.join(args.base, "pdf", "transcript.tex")
+    out_path = args.output or os.path.join(args.base, "publish_tex", "transcript.tex")
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w") as f:
         f.write(tex_content)

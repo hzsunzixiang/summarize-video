@@ -3,25 +3,26 @@
 #
 # Usage:
 #   1. Edit config.env (fill in URL and TITLE)
-#   2. make all               # run full pipeline
+#   2. make all               # run full pipeline (auto-detect tex/md mode)
 #
-#   make pdf                  # recompile PDF only
+#   make all-tex              # force LaTeX mode
+#   make all-md               # force Markdown mode
+#   make pdf                  # recompile PDF only (current mode)
 #   make transcript           # download + transcribe only
 #   make slides               # download + extract frames only
-#   make clean                # remove LaTeX auxiliary files
+#   make clean                # remove auxiliary files
 #   make distclean            # remove ALL generated files
 #   make help                 # show all targets
 #
 # Parameters can also be overridden on command line:
 #   make URL="..." TITLE="..." all
+#   make PUBLISH_MODE=md all  # force Markdown mode
 #
 # Idempotent: each step checks if output exists and skips.
 # To force re-run, delete the output first.
 # ============================================================================
 
 # ── Load configuration from config.env ───────────────────────────────────────
-# config.env is the primary way to set parameters.
-# Command-line overrides still take precedence (make VAR=value).
 -include config.env
 
 # ── Default values (used if not set in config.env or command line) ───────────
@@ -32,6 +33,21 @@ SEGMENT_SEC    ?= 600
 FRAME_INTERVAL ?= 30
 DEDUP_THRESH   ?= 20
 VIDEO_FORMAT   ?= bestvideo[height<=720]+bestaudio/best[height<=720]
+PUBLISH_MODE   ?= auto
+TRANSLATE_ZH   ?= auto
+
+# ── Resolve PUBLISH_MODE ─────────────────────────────────────────────────────
+# auto → detect xelatex availability
+ifeq ($(PUBLISH_MODE),auto)
+  HAS_XELATEX := $(shell command -v xelatex >/dev/null 2>&1 && echo yes || echo no)
+  ifeq ($(HAS_XELATEX),yes)
+    RESOLVED_MODE := tex
+  else
+    RESOLVED_MODE := md
+  endif
+else
+  RESOLVED_MODE := $(PUBLISH_MODE)
+endif
 
 # ── Derived variables ────────────────────────────────────────────────────────
 BV_ID          := $(shell echo "$(URL)" | grep -oE 'BV[a-zA-Z0-9]+' | head -1)
@@ -40,12 +56,28 @@ AUDIO          := audio.mp3
 PARTS_DIR      := audio_parts
 SLIDES_DIR     := slides
 KEY_SLIDES_DIR := key_slides
-PDF_DIR        := pdf
-PDF_MAKEFILE   := $(PDF_DIR)/Makefile
-PDF_TEMPLATE   := Makefile.pdf.template
 TRANSCRIPT     := full_whisper_transcript.txt
-TEX_FILE       := $(PDF_DIR)/transcript.tex
-PDF_FILE       := $(PDF_DIR)/transcript.pdf
+SUMMARY_EN     := full_transcript.txt
+SUMMARY_ZH     := full_transcript_zh.txt
+
+# Mode-specific directories and files
+ifeq ($(RESOLVED_MODE),tex)
+  PUBLISH_DIR    := publish_tex
+  PUB_TEMPLATE   := Makefile.publish_tex.template
+  DOC_FILE       := $(PUBLISH_DIR)/transcript.tex
+  DOC_PDF        := $(PUBLISH_DIR)/transcript.pdf
+  BEAMER_FILE    := $(PUBLISH_DIR)/slides.tex
+  BEAMER_OUT     := $(PUBLISH_DIR)/slides.pdf
+else
+  PUBLISH_DIR    := publish_md
+  PUB_TEMPLATE   := Makefile.publish_md.template
+  DOC_FILE       := $(PUBLISH_DIR)/transcript.md
+  DOC_PDF        := $(PUBLISH_DIR)/transcript.pdf
+  BEAMER_FILE    := $(PUBLISH_DIR)/slides.md
+  BEAMER_OUT     := $(PUBLISH_DIR)/slides.pptx
+endif
+
+PUB_MAKEFILE   := $(PUBLISH_DIR)/Makefile
 
 # Whisper model auto-detect
 WHISPER_MODELS ?= $(HOME)/.summarize/cache/whisper-cpp/models
@@ -57,25 +89,37 @@ WHISPER_MODEL  := $(shell \
 	fi)
 
 # ── Phony targets ───────────────────────────────────────────────────────────
-.PHONY: all pdf transcript slides dedup tex download audio segment \
-        transcribe merge-transcript extract-frames copy-images \
-        check-url check-deps info clean distclean help
+.PHONY: all all-tex all-md pdf transcript slides dedup tex markdown \
+        download audio segment transcribe merge-transcript \
+        extract-frames copy-images \
+        translate beamer presentation \
+        check-url check-deps check-deps-tex check-deps-md \
+        info clean distclean help
 
 # ── Default target ───────────────────────────────────────────────────────────
 all: check-url check-deps pdf
 	@echo ""
 	@echo "============================================"
-	@echo "  ✅ Pipeline complete!"
+	@echo "  ✅ Pipeline complete! (mode: $(RESOLVED_MODE))"
 	@echo "============================================"
 	@echo "  Video:       $(VIDEO)"
 	@echo "  Transcript:  $(TRANSCRIPT)"
 	@echo "  Key slides:  $(KEY_SLIDES_DIR)/"
-	@echo "  PDF:         $(PDF_FILE)"
+	@echo "  Output:      $(PUBLISH_DIR)/"
+	@echo "  PDF:         $(DOC_PDF)"
 	@echo ""
+
+# ── Force-mode aliases ───────────────────────────────────────────────────────
+all-tex:
+	@$(MAKE) PUBLISH_MODE=tex all
+
+all-md:
+	@$(MAKE) PUBLISH_MODE=md all
 
 # ── Convenience aliases ──────────────────────────────────────────────────────
 transcript: check-url check-deps merge-transcript
 slides:     check-url check-deps dedup
+presentation: check-url check-deps beamer
 
 # ── Validation ───────────────────────────────────────────────────────────────
 check-url:
@@ -83,14 +127,22 @@ ifeq ($(BV_ID),)
 	$(error URL is required. Usage: make URL="https://www.bilibili.com/video/BVxxxxxxxx/" all)
 endif
 
-check-deps:
+check-deps: check-deps-common check-deps-$(RESOLVED_MODE)
+
+check-deps-common:
 	@command -v yt-dlp      >/dev/null 2>&1 || { echo "ERROR: yt-dlp not found.      Install: brew install yt-dlp"; exit 1; }
 	@command -v ffmpeg      >/dev/null 2>&1 || { echo "ERROR: ffmpeg not found.      Install: brew install ffmpeg"; exit 1; }
 	@command -v ffprobe     >/dev/null 2>&1 || { echo "ERROR: ffprobe not found.     Install: brew install ffmpeg"; exit 1; }
 	@command -v whisper-cli >/dev/null 2>&1 || { echo "ERROR: whisper-cli not found. Install: brew install whisper-cpp"; exit 1; }
 	@command -v python3     >/dev/null 2>&1 || { echo "ERROR: python3 not found.     Install: brew install python3"; exit 1; }
-	@command -v xelatex     >/dev/null 2>&1 || { echo "ERROR: xelatex not found.     Install: brew install --cask mactex"; exit 1; }
 	@test -n "$(WHISPER_MODEL)" || { echo "ERROR: No whisper model found in $(WHISPER_MODELS)"; exit 1; }
+
+check-deps-tex:
+	@command -v xelatex     >/dev/null 2>&1 || { echo "ERROR: xelatex not found.     Install: brew install --cask mactex"; exit 1; }
+
+check-deps-md:
+	@python3 -c "import markdown" 2>/dev/null || { echo "WARNING: markdown not found. Install: pip3 install markdown"; }
+	@python3 -c "import weasyprint" 2>/dev/null || { echo "WARNING: weasyprint not found. Install: pip3 install weasyprint"; }
 
 # ── Step 1: Download video ──────────────────────────────────────────────────
 download: $(VIDEO)
@@ -160,64 +212,108 @@ $(KEY_SLIDES_DIR)/.done: $(SLIDES_DIR)/.done
 	python3 dedup_slides.py --input $(SLIDES_DIR) --output $(KEY_SLIDES_DIR) --threshold $(DEDUP_THRESH) --frame-interval $(FRAME_INTERVAL)
 	@touch $@
 
-copy-images: $(PDF_DIR)/images/.done
+copy-images: $(PUBLISH_DIR)/images/.done
 
-$(PDF_DIR)/images/.done: $(KEY_SLIDES_DIR)/.done
-	@echo "  Copying key slides to pdf/images/..."
-	@mkdir -p $(PDF_DIR)/images
-	@cp $(KEY_SLIDES_DIR)/slide_*.jpg $(PDF_DIR)/images/ 2>/dev/null || true
+$(PUBLISH_DIR)/images/.done: $(KEY_SLIDES_DIR)/.done
+	@echo "  Copying key slides to $(PUBLISH_DIR)/images/..."
+	@mkdir -p $(PUBLISH_DIR)/images
+	@cp $(KEY_SLIDES_DIR)/slide_*.jpg $(PUBLISH_DIR)/images/ 2>/dev/null || true
 	@touch $@
 
-# ── Step 6: Generate LaTeX ──────────────────────────────────────────────────
-tex: $(TEX_FILE)
+# ── Step 6: Generate document (tex or md) ───────────────────────────────────
+ifeq ($(RESOLVED_MODE),tex)
 
-$(TEX_FILE): $(TRANSCRIPT) $(KEY_SLIDES_DIR)/.done $(VIDEO)
+tex: $(DOC_FILE)
+
+$(DOC_FILE): $(TRANSCRIPT) $(KEY_SLIDES_DIR)/.done $(VIDEO)
 	@echo "[6/7] Generating LaTeX document..."
-	@mkdir -p $(PDF_DIR)
+	@mkdir -p $(PUBLISH_DIR)
 	$(eval DURATION := $(shell ffprobe -v error -show_entries format=duration \
 		-of default=noprint_wrappers=1:nokey=1 $(VIDEO) 2>/dev/null | cut -d. -f1))
 	python3 gen_transcript_tex.py --base . --title "$(TITLE)" --url "$(URL)" \
-		--duration $(DURATION) --segment-sec $(SEGMENT_SEC) --output "$(TEX_FILE)"
-	@cp $(PDF_TEMPLATE) $(PDF_MAKEFILE)
+		--duration $(DURATION) --segment-sec $(SEGMENT_SEC) --output "$(DOC_FILE)"
+	@cp $(PUB_TEMPLATE) $(PUB_MAKEFILE)
 	@echo "  ✓ LaTeX: $@ ($$(wc -c < "$@") bytes)"
 
-# ── Step 7: Compile PDF ─────────────────────────────────────────────────────
-pdf: $(PDF_FILE)
+else
 
-$(PDF_FILE): $(TEX_FILE) $(PDF_DIR)/images/.done
-	@echo "[7/7] Compiling PDF with xelatex..."
-	@cd $(PDF_DIR) && $(MAKE) --no-print-directory
+markdown: $(DOC_FILE)
+
+$(DOC_FILE): $(TRANSCRIPT) $(KEY_SLIDES_DIR)/.done $(VIDEO)
+	@echo "[6/7] Generating Markdown document..."
+	@mkdir -p $(PUBLISH_DIR)
+	$(eval DURATION := $(shell ffprobe -v error -show_entries format=duration \
+		-of default=noprint_wrappers=1:nokey=1 $(VIDEO) 2>/dev/null | cut -d. -f1))
+	python3 gen_transcript_md.py --base . --title "$(TITLE)" --url "$(URL)" \
+		--duration $(DURATION) --segment-sec $(SEGMENT_SEC) --output "$(DOC_FILE)"
+	@cp $(PUB_TEMPLATE) $(PUB_MAKEFILE)
+	@cp md2pdf.py $(PUBLISH_DIR)/md2pdf.py
+	@echo "  ✓ Markdown: $@ ($$(wc -c < "$@") bytes)"
+
+endif
+
+# ── Step 7a: Translate English → Chinese ────────────────────────────────────
+translate: $(SUMMARY_ZH)
+
+$(SUMMARY_ZH): $(SUMMARY_EN)
+	@echo "[7a] Translating English summary to Chinese..."
+	python3 gen_presentation.py translate --input $(SUMMARY_EN) --output $(SUMMARY_ZH)
+	@echo "  ✓ Chinese translation: $@ ($$(wc -c < "$@") bytes)"
+
+# ── Step 7b: Generate Beamer/PPTX slides ────────────────────────────────────
+beamer: $(BEAMER_FILE)
+
+$(BEAMER_FILE): $(SUMMARY_ZH)
+	@echo "[7b] Generating presentation..."
+	@mkdir -p $(PUBLISH_DIR)
+	python3 gen_presentation.py beamer --input $(SUMMARY_ZH) --output $(BEAMER_FILE) \
+		--title "$(TITLE)" --url "$(URL)"
+	@cp $(PUB_TEMPLATE) $(PUB_MAKEFILE) 2>/dev/null || true
+	@echo "  ✓ Presentation: $@ ($$(wc -c < "$@") bytes)"
+
+# ── Step 8: Compile PDF ─────────────────────────────────────────────────────
+pdf: $(DOC_PDF)
+
+$(DOC_PDF): $(DOC_FILE) $(PUBLISH_DIR)/images/.done
+	@echo "[8/8] Compiling PDF (mode: $(RESOLVED_MODE))..."
+	@cd $(PUBLISH_DIR) && $(MAKE) --no-print-directory
 	@echo "  ✓ PDF: $@ ($$(du -h "$@" | cut -f1))"
 
 # ── Clean targets ────────────────────────────────────────────────────────────
 clean:
-	@echo "Cleaning LaTeX auxiliary files..."
-	@if [ -f $(PDF_DIR)/Makefile ]; then cd $(PDF_DIR) && $(MAKE) --no-print-directory clean; fi
+	@echo "Cleaning auxiliary files..."
+	@if [ -f publish_tex/Makefile ]; then cd publish_tex && $(MAKE) --no-print-directory clean; fi
+	@if [ -f publish_md/Makefile ]; then cd publish_md && $(MAKE) --no-print-directory clean; fi
 
 distclean: clean
 	@echo "Removing all generated files..."
 	rm -f *.mp4 $(AUDIO)
 	rm -rf $(PARTS_DIR) $(SLIDES_DIR) $(KEY_SLIDES_DIR)
 	rm -f whisper_part*.txt $(TRANSCRIPT)
-	rm -f $(PDF_FILE) $(TEX_FILE) $(PDF_MAKEFILE)
-	rm -rf $(PDF_DIR)/images
-	@# Remove empty pdf/ directory if nothing left
-	@rmdir $(PDF_DIR) 2>/dev/null || true
+	rm -f $(SUMMARY_ZH)
+	rm -rf publish_tex publish_md
 	rm -rf __pycache__
 
 # ── Help ─────────────────────────────────────────────────────────────────────
 help:
 	@echo "Bilibili / YouTube Video → PDF Transcript Pipeline"
 	@echo ""
+	@echo "Current mode: $(RESOLVED_MODE) (PUBLISH_MODE=$(PUBLISH_MODE))"
+	@echo "Output dir:   $(PUBLISH_DIR)/"
+	@echo ""
 	@echo "Usage:"
-	@echo "  1. Edit config.env (fill in URL and TITLE)"
+	@echo "  1. Edit config.env (fill in URL, TITLE, PUBLISH_MODE, TRANSLATE_ZH)"
 	@echo "  2. make all"
 	@echo ""
 	@echo "Or override on command line:"
-	@echo "  make URL=\"https://www.bilibili.com/video/BVxxxxxxxx/\" all"
+	@echo "  make URL=\"...\" all                # auto-detect mode"
+	@echo "  make URL=\"...\" PUBLISH_MODE=md all # force Markdown mode"
+	@echo "  make URL=\"...\" PUBLISH_MODE=tex all # force LaTeX mode"
 	@echo ""
 	@echo "Targets:"
-	@echo "  all            Full pipeline: download → transcribe → slides → PDF"
+	@echo "  all            Full pipeline (auto-detect tex/md mode)"
+	@echo "  all-tex        Full pipeline, force LaTeX mode → publish_tex/"
+	@echo "  all-md         Full pipeline, force Markdown mode → publish_md/"
 	@echo "  download       Step 1: Download video"
 	@echo "  audio          Step 2: Extract audio from video"
 	@echo "  segment        Step 3: Segment audio into chunks"
@@ -226,9 +322,13 @@ help:
 	@echo "  extract-frames Step 5a: Extract video frames"
 	@echo "  dedup          Step 5b: Deduplicate frames"
 	@echo "  slides         Steps 1,5: Download + extract + dedup frames"
-	@echo "  tex            Step 6: Generate LaTeX from transcript + slides"
-	@echo "  pdf            Step 7: Compile PDF (runs all prerequisites)"
-	@echo "  clean          Remove LaTeX auxiliary files"
+	@echo "  tex            Step 6: Generate LaTeX (tex mode only)"
+	@echo "  markdown       Step 6: Generate Markdown (md mode only)"
+	@echo "  translate      Step 7a: Translate English summary to Chinese"
+	@echo "  beamer         Step 7b: Generate presentation (Beamer/PPTX)"
+	@echo "  presentation   Steps 1-7b: Full pipeline + presentation"
+	@echo "  pdf            Step 8: Compile PDF (runs all prerequisites)"
+	@echo "  clean          Remove auxiliary files"
 	@echo "  distclean      Remove ALL generated files"
 	@echo "  info           Show current configuration"
 	@echo "  help           Show this help"
@@ -236,17 +336,17 @@ help:
 	@echo "Variables (override on command line):"
 	@echo "  URL            Video URL (required)"
 	@echo "  TITLE          PDF title (default: Video Transcript)"
+	@echo "  PUBLISH_MODE   tex | md | auto (default: auto, detect xelatex)"
+	@echo "  TRANSLATE_ZH   yes | no | auto (default: auto, LLM decides)"
 	@echo "  WHISPER_LANG   Whisper language: en|zh|auto (default: en)"
 	@echo "  SEGMENT_SEC    Audio segment length in seconds (default: 600)"
 	@echo "  FRAME_INTERVAL Frame extraction interval in seconds (default: 30)"
 	@echo "  DEDUP_THRESH   dhash dedup threshold (default: 20)"
 	@echo "  VIDEO_FORMAT   yt-dlp format string (default: 720p)"
 	@echo ""
-	@echo "Examples:"
-	@echo "  vim config.env              # edit configuration"
-	@echo "  make all                    # run full pipeline"
-	@echo "  make pdf                    # recompile PDF only"
-	@echo "  make transcript             # download + transcribe only"
+	@echo "Publish modes:"
+	@echo "  tex  → publish_tex/  (LaTeX/xelatex, best quality, requires mactex)"
+	@echo "  md   → publish_md/   (Markdown + Python, no LaTeX needed)"
 	@echo ""
 	@echo "Config file:"
 	@echo "  config.env                  # primary configuration (auto-loaded)"
@@ -256,6 +356,9 @@ info:
 	@echo "  URL:            $(URL)"
 	@echo "  BV_ID:          $(BV_ID)"
 	@echo "  TITLE:          $(TITLE)"
+	@echo "  PUBLISH_MODE:   $(PUBLISH_MODE) → resolved: $(RESOLVED_MODE)"
+	@echo "  TRANSLATE_ZH:   $(TRANSLATE_ZH)"
+	@echo "  PUBLISH_DIR:    $(PUBLISH_DIR)"
 	@echo "  WHISPER_LANG:   $(WHISPER_LANG)"
 	@echo "  SEGMENT_SEC:    $(SEGMENT_SEC)"
 	@echo "  FRAME_INTERVAL: $(FRAME_INTERVAL)"

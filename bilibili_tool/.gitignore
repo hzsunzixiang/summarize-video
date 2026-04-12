@@ -7,10 +7,18 @@
 audio_parts/
 slides/
 key_slides/
-pdf/*.pdf
-pdf/*.tex
-pdf/images/
-pdf/Makefile
+
+# Publish outputs (both modes)
+publish_tex/*.pdf
+publish_tex/*.tex
+publish_tex/images/
+publish_tex/Makefile
+publish_md/*.pdf
+publish_md/*.md
+publish_md/*.pptx
+publish_md/images/
+publish_md/Makefile
+publish_md/md2pdf.py
 
 # Whisper intermediate outputs
 whisper_part*.txt
