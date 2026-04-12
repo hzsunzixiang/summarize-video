@@ -41,6 +41,8 @@ PARTS_DIR      := audio_parts
 SLIDES_DIR     := slides
 KEY_SLIDES_DIR := key_slides
 PDF_DIR        := pdf
+PDF_MAKEFILE   := $(PDF_DIR)/Makefile
+PDF_TEMPLATE   := Makefile.pdf.template
 TRANSCRIPT     := full_whisper_transcript.txt
 TEX_FILE       := $(PDF_DIR)/transcript.tex
 PDF_FILE       := $(PDF_DIR)/transcript.pdf
@@ -176,6 +178,7 @@ $(TEX_FILE): $(TRANSCRIPT) $(KEY_SLIDES_DIR)/.done $(VIDEO)
 		-of default=noprint_wrappers=1:nokey=1 $(VIDEO) 2>/dev/null | cut -d. -f1))
 	python3 gen_transcript_tex.py --base . --title "$(TITLE)" --url "$(URL)" \
 		--duration $(DURATION) --segment-sec $(SEGMENT_SEC) --output "$(TEX_FILE)"
+	@cp $(PDF_TEMPLATE) $(PDF_MAKEFILE)
 	@echo "  ✓ LaTeX: $@ ($$(wc -c < "$@") bytes)"
 
 # ── Step 7: Compile PDF ─────────────────────────────────────────────────────
@@ -183,25 +186,20 @@ pdf: $(PDF_FILE)
 
 $(PDF_FILE): $(TEX_FILE) $(PDF_DIR)/images/.done
 	@echo "[7/7] Compiling PDF with xelatex..."
-	@cd $(PDF_DIR) && \
-		xelatex -interaction=nonstopmode -halt-on-error $$(basename $(TEX_FILE)) >/dev/null 2>&1 && \
-		xelatex -interaction=nonstopmode -halt-on-error $$(basename $(TEX_FILE)) >/dev/null 2>&1 && \
-		rm -f *.aux *.log *.out *.toc *.fls *.fdb_latexmk *.synctex.gz *.nav *.snm *.vrb
+	@cd $(PDF_DIR) && $(MAKE) --no-print-directory
 	@echo "  ✓ PDF: $@ ($$(du -h "$@" | cut -f1))"
 
 # ── Clean targets ────────────────────────────────────────────────────────────
 clean:
 	@echo "Cleaning LaTeX auxiliary files..."
-	rm -f $(PDF_DIR)/*.aux $(PDF_DIR)/*.log $(PDF_DIR)/*.out $(PDF_DIR)/*.toc
-	rm -f $(PDF_DIR)/*.fls $(PDF_DIR)/*.fdb_latexmk $(PDF_DIR)/*.synctex.gz
-	rm -f $(PDF_DIR)/*.nav $(PDF_DIR)/*.snm $(PDF_DIR)/*.vrb
+	@if [ -f $(PDF_DIR)/Makefile ]; then cd $(PDF_DIR) && $(MAKE) --no-print-directory clean; fi
 
 distclean: clean
 	@echo "Removing all generated files..."
 	rm -f *.mp4 $(AUDIO)
 	rm -rf $(PARTS_DIR) $(SLIDES_DIR) $(KEY_SLIDES_DIR)
 	rm -f whisper_part*.txt $(TRANSCRIPT)
-	rm -f $(PDF_FILE) $(TEX_FILE)
+	rm -f $(PDF_FILE) $(TEX_FILE) $(PDF_MAKEFILE)
 	rm -rf $(PDF_DIR)/images
 	@# Remove empty pdf/ directory if nothing left
 	@rmdir $(PDF_DIR) 2>/dev/null || true

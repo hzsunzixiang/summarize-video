@@ -1,0 +1,71 @@
+# Template: Makefile for pdf/ directory
+# ======================================
+# This template is copied to pdf/Makefile during the pipeline.
+# LLM or user may customize it (e.g. add beamer targets) before compiling.
+#
+# Compile with xelatex (CJK support)
+#
+# Usage (inside pdf/ directory):
+#   make              # build all PDFs
+#   make transcript   # build transcript PDF only
+#   make beamer       # build beamer slides PDF only
+#   make quick        # single pass compile (fast, TOC may be wrong)
+#   make clean        # remove auxiliary files
+#   make distclean    # remove auxiliary files + all PDFs
+#   make watch        # auto-recompile on .tex change (requires fswatch)
+
+# Full verbatim transcript (article class)
+TEX_TRANSCRIPT = transcript.tex
+PDF_TRANSCRIPT = $(TEX_TRANSCRIPT:.tex=.pdf)
+
+# Beamer slides (beamer class) — uncomment when available
+# TEX_BEAMER     = slides.tex
+# PDF_BEAMER     = $(TEX_BEAMER:.tex=.pdf)
+
+XELATEX  = xelatex
+FLAGS    = -interaction=nonstopmode -halt-on-error
+
+# Collect all PDF targets (add $(PDF_BEAMER) when ready)
+ALL_PDFS = $(PDF_TRANSCRIPT)
+
+# ── Build targets ────────────────────────────────────────────────────────────
+
+# Build all PDFs
+all: $(ALL_PDFS)
+
+# Build only the transcript version
+transcript: $(PDF_TRANSCRIPT)
+
+$(PDF_TRANSCRIPT): $(TEX_TRANSCRIPT) $(wildcard images/*.jpg)
+	$(XELATEX) $(FLAGS) $(TEX_TRANSCRIPT)
+	$(XELATEX) $(FLAGS) $(TEX_TRANSCRIPT)
+
+# Build only the beamer version (uncomment when available)
+# beamer: $(PDF_BEAMER)
+#
+# $(PDF_BEAMER): $(TEX_BEAMER) $(wildcard images/*.jpg)
+# 	$(XELATEX) $(FLAGS) $(TEX_BEAMER)
+# 	$(XELATEX) $(FLAGS) $(TEX_BEAMER)
+
+# Quick compile (single pass, TOC may be wrong)
+quick:
+	$(XELATEX) $(FLAGS) $(TEX_TRANSCRIPT)
+
+# ── Clean targets ────────────────────────────────────────────────────────────
+
+# Clean auxiliary files
+clean:
+	rm -f *.aux *.log *.out *.toc *.fls *.fdb_latexmk *.synctex.gz *.nav *.snm *.vrb
+
+# Deep clean (including all PDFs)
+distclean: clean
+	rm -f $(ALL_PDFS)
+
+# ── Utilities ────────────────────────────────────────────────────────────────
+
+# Watch for changes and recompile (requires fswatch)
+watch:
+	@echo "Watching *.tex for changes..."
+	fswatch -o *.tex | xargs -n1 -I{} make quick
+
+.PHONY: all transcript beamer quick clean distclean watch

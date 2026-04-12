@@ -10,6 +10,7 @@ key_slides/
 pdf/*.pdf
 pdf/*.tex
 pdf/images/
+pdf/Makefile
 
 # Whisper intermediate outputs
 whisper_part*.txt
