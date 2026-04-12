@@ -2,9 +2,9 @@
 # Makefile — Bilibili / YouTube Video → PDF Transcript Pipeline
 #
 # Usage:
-#   make URL="https://www.bilibili.com/video/BV1rY411V7Ko/" all
-#   make URL="https://www.bilibili.com/video/BV1rY411V7Ko/" \
-#        TITLE="FHE十年发展" WHISPER_LANG=en all
+#   1. Edit config.env (fill in URL and TITLE)
+#   2. make all               # run full pipeline
+#
 #   make pdf                  # recompile PDF only
 #   make transcript           # download + transcribe only
 #   make slides               # download + extract frames only
@@ -12,11 +12,19 @@
 #   make distclean            # remove ALL generated files
 #   make help                 # show all targets
 #
+# Parameters can also be overridden on command line:
+#   make URL="..." TITLE="..." all
+#
 # Idempotent: each step checks if output exists and skips.
 # To force re-run, delete the output first.
 # ============================================================================
 
-# ── User-configurable variables ──────────────────────────────────────────────
+# ── Load configuration from config.env ───────────────────────────────────────
+# config.env is the primary way to set parameters.
+# Command-line overrides still take precedence (make VAR=value).
+-include config.env
+
+# ── Default values (used if not set in config.env or command line) ───────────
 URL            ?=
 TITLE          ?= Video Transcript
 WHISPER_LANG   ?= en
@@ -215,6 +223,10 @@ help:
 	@echo "Bilibili / YouTube Video → PDF Transcript Pipeline"
 	@echo ""
 	@echo "Usage:"
+	@echo "  1. Edit config.env (fill in URL and TITLE)"
+	@echo "  2. make all"
+	@echo ""
+	@echo "Or override on command line:"
 	@echo "  make URL=\"https://www.bilibili.com/video/BVxxxxxxxx/\" all"
 	@echo ""
 	@echo "Targets:"
@@ -244,13 +256,16 @@ help:
 	@echo "  VIDEO_FORMAT   yt-dlp format string (default: 720p)"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make URL=\"https://www.bilibili.com/video/BV1rY411V7Ko/\" all"
-	@echo "  make URL=\"...\" WHISPER_LANG=zh TITLE=\"我的视频\" all"
+	@echo "  vim config.env              # edit configuration"
+	@echo "  make all                    # run full pipeline"
 	@echo "  make pdf                    # recompile PDF only"
 	@echo "  make transcript             # download + transcribe only"
+	@echo ""
+	@echo "Config file:"
+	@echo "  config.env                  # primary configuration (auto-loaded)"
 
 info:
-	@echo "Configuration:"
+	@echo "Configuration (from config.env + command line):"
 	@echo "  URL:            $(URL)"
 	@echo "  BV_ID:          $(BV_ID)"
 	@echo "  TITLE:          $(TITLE)"
