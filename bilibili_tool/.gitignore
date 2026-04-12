@@ -1,0 +1,31 @@
+# bilibili_tool - Video to PDF pipeline
+# ======================================
+
+# Large binary files
+*.mp4
+*.mp3
+audio_parts/
+slides/
+key_slides/
+pdf/*.pdf
+pdf/images/
+
+# Whisper intermediate outputs
+whisper_part*.txt
+full_whisper_transcript.txt
+
+# LaTeX auxiliary files
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.nav
+*.snm
+*.vrb
+
+# Python cache
+__pycache__/
+*.pyc
