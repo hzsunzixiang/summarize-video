@@ -139,24 +139,7 @@ merge-transcript: $(TRANSCRIPT)
 
 $(TRANSCRIPT): $(PARTS_DIR)/.transcribed
 	@echo "  Merging transcripts..."
-	@idx=0; \
-	total=$$(ls $(PARTS_DIR)/part_*.mp3 | wc -l | tr -d ' '); \
-	> $@; \
-	for part in $(PARTS_DIR)/part_*.mp3; do \
-		name=$$(basename "$$part" .mp3); \
-		offset_min=$$((idx * $(SEGMENT_SEC) / 60)); \
-		end_min=$$(( (idx + 1) * $(SEGMENT_SEC) / 60 )); \
-		echo "" >> $@; \
-		printf -- "--- [%02d:00 - %02d:00] Part %d of %d ---\n" $$offset_min $$end_min $$((idx + 1)) $$total >> $@; \
-		echo "" >> $@; \
-		if [ -f "whisper_$${name}.txt" ]; then \
-			cat "whisper_$${name}.txt" >> $@; \
-		else \
-			echo "[WARNING] Missing transcript for $$name" >> $@; \
-		fi; \
-		idx=$$((idx + 1)); \
-	done
-	@echo "  ✓ Transcript: $@ ($$(wc -c < "$@") bytes)"
+	python3 merge_transcript.py --parts-dir $(PARTS_DIR) --segment-sec $(SEGMENT_SEC) --output $@
 
 # ── Step 5: Extract & deduplicate frames ────────────────────────────────────
 extract-frames: $(SLIDES_DIR)/.done
@@ -186,10 +169,13 @@ $(PDF_DIR)/images/.done: $(KEY_SLIDES_DIR)/.done
 # ── Step 6: Generate LaTeX ──────────────────────────────────────────────────
 tex: $(TEX_FILE)
 
-$(TEX_FILE): $(TRANSCRIPT) $(KEY_SLIDES_DIR)/.done
+$(TEX_FILE): $(TRANSCRIPT) $(KEY_SLIDES_DIR)/.done $(VIDEO)
 	@echo "[6/7] Generating LaTeX document..."
 	@mkdir -p $(PDF_DIR)
-	python3 gen_transcript_tex.py --base . --title "$(TITLE)" --url "$(URL)" --output "$(TEX_FILE)"
+	$(eval DURATION := $(shell ffprobe -v error -show_entries format=duration \
+		-of default=noprint_wrappers=1:nokey=1 $(VIDEO) 2>/dev/null | cut -d. -f1))
+	python3 gen_transcript_tex.py --base . --title "$(TITLE)" --url "$(URL)" \
+		--duration $(DURATION) --segment-sec $(SEGMENT_SEC) --output "$(TEX_FILE)"
 	@echo "  ✓ LaTeX: $@ ($$(wc -c < "$@") bytes)"
 
 # ── Step 7: Compile PDF ─────────────────────────────────────────────────────

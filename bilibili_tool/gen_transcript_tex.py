@@ -16,8 +16,13 @@ import os
 SLIDE_TIMESTAMPS = {}
 
 
-def build_slide_timestamps(base_dir, duration=None):
-    """Build mapping: slide filename -> timestamp in seconds."""
+def build_slide_timestamps(base_dir, duration):
+    """Build mapping: slide filename -> timestamp in seconds.
+
+    Args:
+        base_dir: Project base directory containing key_slides/
+        duration: Video duration in seconds (required, passed from Makefile)
+    """
     slides_dir = os.path.join(base_dir, "key_slides")
 
     slides = sorted(os.listdir(slides_dir))
@@ -26,31 +31,6 @@ def build_slide_timestamps(base_dir, duration=None):
     if not slides:
         print("No slides found!")
         return slides
-
-    # Auto-detect duration from video if not provided
-    if duration is None:
-        video_files = [f for f in os.listdir(base_dir) if f.endswith(".mp4")]
-        if video_files:
-            import subprocess
-            try:
-                result = subprocess.run(
-                    ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-                     "-of", "default=noprint_wrappers=1:nokey=1",
-                     os.path.join(base_dir, video_files[0])],
-                    capture_output=True, text=True
-                )
-                duration = int(float(result.stdout.strip()))
-            except Exception:
-                pass
-        if duration is None:
-            # Estimate from transcript parts (10 min each)
-            parts_dir = os.path.join(base_dir, "audio_parts")
-            if os.path.isdir(parts_dir):
-                parts = [f for f in os.listdir(parts_dir)
-                         if f.startswith("part_") and f.endswith(".mp3")]
-                duration = len(parts) * 600
-            else:
-                duration = 3600  # fallback: 1 hour
 
     n = len(slides)
     for i, s in enumerate(slides):
@@ -76,8 +56,13 @@ def escape_tex(s):
     return s
 
 
-def read_transcript(base_dir):
-    """Read the full whisper transcript and split into paragraphs with timestamps."""
+def read_transcript(base_dir, segment_sec=600):
+    """Read the full whisper transcript and split into paragraphs with timestamps.
+
+    Args:
+        base_dir: Project base directory containing full_whisper_transcript.txt
+        segment_sec: Duration of each audio segment in seconds (must match Makefile SEGMENT_SEC)
+    """
     transcript_path = os.path.join(base_dir, "full_whisper_transcript.txt")
     with open(transcript_path, "r") as f:
         text = f.read()
@@ -86,7 +71,7 @@ def read_transcript(base_dir):
     parts = re.split(r'\n--- \[(\d+:\d+) - (\d+:\d+)\] Part (\d+) of (\d+) ---\n', text)
 
     paragraphs = []  # list of (start_seconds, text)
-    segment_duration = 600  # default 10 min per segment
+    segment_duration = segment_sec
 
     i = 1
     while i < len(parts):
@@ -279,8 +264,12 @@ def main():
         help="Original video URL (shown on title page)"
     )
     parser.add_argument(
-        "--duration", "-d", type=int, default=None,
-        help="Video duration in seconds (auto-detected if omitted)"
+        "--duration", "-d", type=int, required=True,
+        help="Video duration in seconds (passed from Makefile via ffprobe)"
+    )
+    parser.add_argument(
+        "--segment-sec", "-s", type=int, default=600,
+        help="Audio segment duration in seconds (default: 600, must match Makefile SEGMENT_SEC)"
     )
     parser.add_argument(
         "--output", "-o", default=None,
@@ -289,7 +278,7 @@ def main():
     args = parser.parse_args()
 
     slides = build_slide_timestamps(args.base, args.duration)
-    paragraphs = read_transcript(args.base)
+    paragraphs = read_transcript(args.base, args.segment_sec)
 
     print(f"Paragraphs: {len(paragraphs)}")
 
