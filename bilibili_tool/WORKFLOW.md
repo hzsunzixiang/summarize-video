@@ -20,7 +20,9 @@ bilibili_tool/
 ├── dedup_slides.py               # 帧去重工具（dhash 算法，仅依赖 Pillow）
 ├── gen_transcript_tex.py         # LaTeX 逐字稿生成器（转录文本 + 幻灯片对齐）
 ├── gen_transcript_md.py          # Markdown 逐字稿生成器（LaTeX 不可用时的退化方案）
+├── gen_presentation.py           # 演示稿生成器（translate + beamer 子命令，过渡性脚本）
 ├── md2pdf.py                     # Markdown → PDF 转换器（weasyprint）
+├── md2pptx.py                    # Markdown slides → PPTX 转换器（python-pptx）
 ├── config.env                    # 项目配置（URL、标题、语言、发布模式等）
 ├── merge_transcript.py           # Whisper 转录合并工具
 ├── .gitignore                    # Git 忽略规则
@@ -290,6 +292,39 @@ python3 gen_transcript_md.py --base . --title "标题" --url "URL" --output publ
 python3 md2pdf.py --input transcript.md --output transcript.pdf --images images/
 ```
 
+### `md2pptx.py`
+
+将结构化 Markdown 幻灯片转换为 PPTX 演示文稿。这是"渲染层"脚本——负责排版和视觉呈现。
+
+"内容层"（决定每页放什么内容）由大模型生成 `slides.md`，本脚本只负责将其转为美观的 `.pptx`。
+
+支持的 Markdown 格式：
+- `# 标题` → 标题页
+- `## 标题` → 内容页标题
+- `- 要点` → 要点列表
+- `![说明](images/xxx.jpg)` → 嵌入图片
+- `---` → 幻灯片分隔符
+- `> 备注` → 演讲者备注
+
+```bash
+python3 md2pptx.py --input slides.md --output slides.pptx --images images/
+```
+
+### `gen_presentation.py`
+
+过渡性脚本，提供 `translate` 和 `beamer` 两个子命令。将来由大模型 Skill 替代。
+
+- `translate`：占位翻译（当前仅复制文件，将来由 LLM 执行高质量翻译）
+- `beamer`：从逐字稿提取关键内容生成 `slides.md`（简单启发式，将来由 LLM 智能提炼）
+
+```bash
+# 翻译（占位）
+python3 gen_presentation.py translate --input full_transcript.txt --output full_transcript_zh.txt
+
+# 生成幻灯片
+python3 gen_presentation.py beamer --input transcript.md --output slides.md --title "标题" --url "URL"
+```
+
 ---
 
 ## 实际运行示例：FHE 演讲（BV1rY411V7Ko）
@@ -353,7 +388,9 @@ bilibili_tool/
 ├── dedup_slides.py               # 帧去重工具
 ├── gen_transcript_tex.py         # LaTeX 生成器
 ├── gen_transcript_md.py          # Markdown 生成器
+├── gen_presentation.py           # 演示稿生成器（过渡性脚本）
 ├── md2pdf.py                     # Markdown → PDF 转换器
+├── md2pptx.py                    # Markdown slides → PPTX 转换器
 ├── merge_transcript.py           # 转录合并工具
 ├── .gitignore
 └── WORKFLOW.md                   # 本文档

@@ -19,10 +19,18 @@ publish_md/*.pptx
 publish_md/images/
 publish_md/Makefile
 publish_md/md2pdf.py
+publish_md/md2pptx.py
 
 # Whisper intermediate outputs
 whisper_part*.txt
 full_whisper_transcript.txt
+
+# LLM-generated intermediate files
+full_transcript.txt
+full_transcript_zh.txt
+
+# Office temp files
+~$*
 
 # LaTeX auxiliary files
 *.aux
